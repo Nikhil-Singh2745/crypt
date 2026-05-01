@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>crypt.c</title>
+<style>
+  html, body {
+    margin: 0; padding: 0;
+    background: #0a0a0a; color: #c8c8c8;
+    font-family: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  #terminal {
+    display: flex; flex-direction: column;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.9), 0 0 60px rgba(0,255,140,0.04) inset;
+    transition: border-color 0.15s;
+  }
+  #terminal:focus-within { border-color: #2a4a2a; }
+  #titlebar {
+    background: #161616;
+    padding: 8px 12px;
+    display: flex; align-items: center; gap: 7px;
+    border-bottom: 1px solid #222;
+    user-select: none;
+  }
+  .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .dot.r { background: #ff5f57; }
+  .dot.y { background: #febc2e; }
+  .dot.g { background: #28c840; }
+  #titlebar .label {
+    flex: 1; text-align: center; font-size: 11px; color: #444;
+    margin-right: 33px;
+  }
+  #frame {
+    position: relative;
+    line-height: 1.05;
+    font-size: 16px;
+    white-space: pre;
+    letter-spacing: 0.5px;
+    padding: 16px;
+    background: #060606;
+    outline: none;
+    margin: 0;
+  }
+  /* CRT scanlines */
+  #frame::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent, transparent 2px,
+      rgba(0,0,0,0.12) 2px, rgba(0,0,0,0.12) 4px
+    );
+    pointer-events: none; z-index: 2;
+  }
+  /* corner vignette */
+  #frame::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
+    pointer-events: none; z-index: 3;
+  }
+  #status {
+    background: #161616;
+    border-top: 1px solid #222;
+    padding: 6px 12px;
+    font-size: 11px; color: #555;
+    text-align: center;
+  }
+  /* structural tiles */
+  #frame .dim   { color: #3a3a3a; }
+  #frame .wall  { color: #6e6e6e; }
+  #frame .floor { color: #2c2c2c; }
+  #frame .door  { color: #b07a3a; }
+  #frame .stairs{ color: #d8d8d8; text-shadow: 0 0 4px rgba(216,216,216,0.4); }
+  /* glowing entity/HUD tiles */
+  #frame .player{ color: #f8f86b; font-weight: bold;
+                  text-shadow: 0 0 8px rgba(248,248,107,0.9), 0 0 20px rgba(248,248,107,0.35);
+                  animation: flicker 1.4s ease-in-out infinite; }
+  #frame .enemy { color: #e26666; text-shadow: 0 0 6px rgba(226,102,102,0.65); }
+  #frame .item  { color: #66c3e2; text-shadow: 0 0 6px rgba(102,195,226,0.5); }
+  #frame .gold  { color: #e2c266; text-shadow: 0 0 6px rgba(226,194,102,0.5); }
+  #frame .hud   { color: #9ad48a; text-shadow: 0 0 8px rgba(154,212,138,0.4); }
+  #frame .bad   { color: #e26666; text-shadow: 0 0 6px rgba(226,102,102,0.4); }
+  #frame .good  { color: #9ad48a; text-shadow: 0 0 6px rgba(154,212,138,0.4); }
+  #frame .msg   { color: #c8c8b0; }
+  @keyframes flicker {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.6; }
+  }
+</style>
+</head>
+<body>
+<div id="terminal">
+  <div id="titlebar">
+    <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+    <span class="label">crypt.c</span>
+  </div>
+  <pre id="frame" tabindex="0">connecting to crypt.c …</pre>
+  <div id="status">click the dungeon — wasd / arrows: move  |  r: restart  |  >: descend stairs</div>
+</div>
+<script>
+  const el  = document.getElementById('frame');
+  const st  = document.getElementById('status');
+
+  el.focus();
+  el.addEventListener('click', () => el.focus());
+  document.addEventListener('click', () => el.focus());
+
+  const es = new EventSource('/game');
+  es.onopen    = ()  => { st.textContent = 'connected — wasd / arrows: move  |  r: restart  |  >: descend stairs'; };
+  es.onmessage = (e) => { el.innerHTML = e.data; };
+  es.onerror   = ()  => { st.textContent = 'reconnecting…'; };
+
+  const KEYMAP = {
+    'w':'w','a':'a','s':'s','d':'d',
+    'W':'w','A':'a','S':'s','D':'d',
+    'ArrowUp':'w','ArrowLeft':'a','ArrowDown':'s','ArrowRight':'d',
+    'k':'w','h':'a','j':'s','l':'d',          // vim, because of course
+    '.':'.', ' ':'.',
+    '>':'>',
+    'r':'r','R':'r',
+  };
+
+  function send(key) {
+    fetch('/input?key=' + encodeURIComponent(key), {
+      credentials: 'same-origin',
+      cache: 'no-store',
+    }).catch(err => { st.textContent = 'input failed: ' + err.message; });
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const k = KEYMAP[e.key];
+    if (!k) return;
+    e.preventDefault();
+    st.textContent = 'pressed: ' + e.key;
+    send(k);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+build/
+*.o
+src/static_html.h
+crypt
+deploy.md
+.DS_Store
