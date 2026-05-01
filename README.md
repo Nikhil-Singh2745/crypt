@@ -67,6 +67,25 @@ It works in Chrome. Other browsers might not work (dont know why). The frontend 
 of HTML/CSS/JS with no dependencies. If it doesn't work, open the console and
 tell me what's broken.
 
+**Why is the map different every time / every floor?**
+The dungeon is procedurally generated. Every floor is built fresh by a BSP
+algorithm — it recursively splits the map into rectangles, carves a room in
+each leaf, then connects siblings with L-shaped corridors. The seed comes from
+`/dev/urandom`, so no two floors are the same run-to-run. When you descend
+stairs the seed is scrambled so consecutive floors don't repeat each other
+either. This is also just how roguelikes work. It's a genre convention from
+1980. Rogue, NetHack, Angband — all of them generate a new dungeon every run.
+
+**Why can't I see the whole map? Why are parts dark?**
+Field of view. The server runs a shadowcasting algorithm from your position
+every turn — you can see tiles within a radius of 8 that aren't blocked by
+walls. Tiles you've visited before show up dimmed but empty (no enemies). Tiles
+you've never seen are blank. Enemies only appear when you can currently see
+them, which means something can be one tile around a corner and you won't know
+it's there until you step into its line of sight. This is also a genre
+convention, not a rendering glitch. It's the whole point — the dungeon is
+supposed to be unknown.
+
 ## Why
 
 Because we could.
