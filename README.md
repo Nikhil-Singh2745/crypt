@@ -4,19 +4,7 @@
 > no framework. no game engine. no runtime. no JavaScript framework. one
 > binary. ~1100 lines. you point a browser at it and the dungeon shows up.
 
-```
-HP 14/16  ATK 4  GOLD 7  DEPTH 2/5  TURN 41
-the goblin hits you for 2.
-
-   ##############
-   #............#
-   #..@..g......+###
-   #............#  #
-   ##############  #
-                #..#
-                #.>#
-                ####
-```
+![Demo](Animation.gif)
 
 The browser is a `<pre>` tag in a fake terminal window. That's the entire
 frontend. Every keypress is a `fetch()`. Every frame is a Server-Sent Event.
