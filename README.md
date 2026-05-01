@@ -11,6 +11,23 @@ frontend. Every keypress is a `fetch()`. Every frame is a Server-Sent Event.
 Sessions are a cookie pointing at a `GameState` struct in a fixed-size array.
 If the server reboots, you die. That's roguelike-correct.
 
+ ## Live demo
+
+  [crypt-f7ji.onrender.com/](https://crypt-f7ji.onrender.com/)
+
+  hosted on Render's free tier. limitations:
+
+  - **cold starts**: if nobody's visited in the last 15 minutes, the server is
+    asleep. the page will stare at you for 30–60 seconds, then the dungeon
+    appears. this is normal. wait.
+  - **server restarts = everyone dies**: Render spins the instance down on
+    inactivity and back up on the next visit. when that happens, all sessions
+    wipe. this is actually correct roguelike behavior.
+  - **512 MB RAM, shared CPU**: one instance, no autoscaling. if it's down it's
+    probably getting hammered by someone. try again in a minute.
+  - **no persistent storage**: nothing is saved. ever. on purpose, but also
+    because the free tier has no disk.
+
 ## Questions from people who don't get it yet
 
 **Why does it look like that?**
